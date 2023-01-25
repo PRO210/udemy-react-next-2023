@@ -1,112 +1,72 @@
-import { Component } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 import '../../styles/global-styles.css';
 import './styles.css';
 
-import { loadPosts } from '../../utils/load-posts';
 import { Posts } from '../../components/Posts';
+import { loadPosts } from '../../utils/load-posts';
 import { Button } from '../../components/Button';
 import { TextInput } from '../../components/TextInputs';
 
-class Home extends Component {
-  state = {
-    posts: [],
-    allPosts: [],
-    page: 0,
-    postsPerPage: 10,
-    searchValue: '',
-  };
+export const Home = () => {
+  const [posts, setPosts] = useState([]);
+  const [allPosts, setAllPosts] = useState([]);
+  const [page, setPage] = useState(0);
+  const [postsPerPage] = useState(3);
+  const [searchValue, setSearchValue] = useState('');
 
-  async componentDidMount() {
-    await this.loadPosts();
-  }
+  const noMorePosts = page + postsPerPage >= allPosts.length;
 
-  loadPosts = async () => {
-    const { page, postsPerPage } = this.state;
+  const filteredPosts = !!searchValue ?
+    posts.filter(post => post.title.toLowerCase().includes(searchValue.toLowerCase())) : posts;
+
+  const handleLoadPosts = useCallback(async (page, postsPerPage) => {
     const postsAndPhotos = await loadPosts();
+    setPosts(postsAndPhotos.slice(page, postsPerPage));
+    setAllPosts(postsAndPhotos);
+  }, []);
 
-    this.setState({
-      posts: postsAndPhotos.slice(page, postsPerPage),
-      allPosts: postsAndPhotos,
-    })
-  }
+  useEffect(() => {
+    handleLoadPosts(0, postsPerPage);
+  }, [handleLoadPosts, postsPerPage]);
 
-  loadMorePosts = () => {
-    const {
-      page,
-      postsPerPage,
-      allPosts,
-      posts
-    } = this.state;
+  const loadMorePosts = () => {
     const nextPage = page + postsPerPage;
     const nexPosts = allPosts.slice(nextPage, nextPage + postsPerPage);
     posts.push(...nexPosts);
 
-    this.setState({ posts, page: nextPage });
+    setPosts(posts);
+    setPage(nextPage);
   }
 
-  handleChange = (e) => {
+  const handleChange = (e) => {
     const { value } = e.target;
-    this.setState({ searchValue: value })
+    setSearchValue(value);
   }
 
-  render() {
-   
-    const { posts, page, postsPerPage, allPosts, searchValue } = this.state;
-    const noMorePosts = page + postsPerPage >= allPosts.length;
+  return (
+    <section className="container">
+      <div className='search-container'>
+        <TextInput searchValue={searchValue} handleChange={handleChange} />
+      </div>
 
-    const filteredPosts = !!searchValue ?
-      posts.filter(post => post.title.toLowerCase().includes(searchValue.toLowerCase()))
-      : posts;
+      {filteredPosts.length > 0 && (
+        <Posts posts={filteredPosts} />
+      )}
+      {filteredPosts.length === 0 && (
+        <h1>Não existem posts</h1>
+      )}
 
-
-    return (
-      <section className="container">
-
-        <div className='search-container'>
-          <TextInput searchValue={searchValue} handleChange={this.handleChange} />
-        </div>
-
-        {filteredPosts.length > 0 && (
-          <Posts posts={filteredPosts} />
+      <div className='button-container'>
+        {!searchValue && (
+          <Button
+            text="Load more"
+            onClick={loadMorePosts}
+            disabled={noMorePosts} />
         )}
-        {filteredPosts.length === 0 && (
-          <h1>Não existem posts</h1>
-        )}
-
-        <div className='button-container'>
-          {!searchValue && (
-            <Button
-              text="Carrega mais"
-              onClick={this.loadMorePosts}
-              disabled={noMorePosts} />
-          )}
-        </div>
-      </section>
-    );
-  }
+      </div>
+    </section>
+  );
 }
 
-export default Home;
-// Tudo certo
-// function App() {
-//   return (
-//     <div className="App">
-//       <header className="App-header">
-//         <img src={logo} className="App-logo" alt="logo" />
-//         <p>
-//           Edit <code>src/App.js</code> and save to reload.
-//         </p>
-//         <a
-//           className="App-link"
-//           href="https://reactjs.org"
-//           target="_blank"
-//           rel="noopener noreferrer"
-//         >
-//           Learn React
-//         </a>
-//       </header>
-//     </div>
-//   );
-// }
-
+export default Home

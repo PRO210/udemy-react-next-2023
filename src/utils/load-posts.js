@@ -12,4 +12,5 @@ export const loadPosts = async () =>{
     })
 
     return postsAndPhotos
-}
+};
+
